@@ -3,13 +3,11 @@
     <!--- thead -->
     <table border="0" :class="prefixClass + '__table-head'">
       <colgroup>
-        <col class="table-tbody__col">
-        <col v-for="item in columns" :key="item.key" class="table-tbody__col">
-        <col class="table-tbody__col">
+        <col v-for="item in columns" :style="{'width':table.cellMinWidth + 'px'}" :key="item.key" class="table-tbody__col">
       </colgroup>
       <tr>
         <th v-for="item in columns" 
-        class="table-head__title" 
+        :class="prefixClass + '__table-th'"
         :key="item.key"
         scope="col"
         >
@@ -37,15 +35,22 @@
         default:''
       }
     },
+    inject:['table'],
     data(){
       return {
       }
-    }
+    },
+    watch:{
+      'table.cellMinWidth':{
+        handler(val){
+          console.log('val =', val)
+        },
+        immediate:true,
+      }
+    },
   }
 </script>
 
-<style scoped>
-.table-tbody__col{
-  width:100px;
-}
+<style>
+
 </style>

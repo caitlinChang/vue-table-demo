@@ -26,7 +26,7 @@
         type:String,
         default:''
       }
-    }
+    },
   }
 </script>
 
