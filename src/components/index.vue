@@ -1,5 +1,5 @@
 <template>
-  <div class="table-wrapper" :style="{height:this.height + 'px',overflow:'scroll'}" @scroll="handleScroll">
+  <div class="table-wrapper" :style="{height:this.height + 'px',overflow:'scroll'}" @scroll="scrollEvent">
     <div class="table-overlay" ref="table-overlay" :style="{height:overHeight}" ></div>
     <div class="table-content" ref="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
       <div id="table" class="table">
@@ -48,15 +48,21 @@
     },
     data(){
       return {
+        wrapper:null,
+
+        debounceWindowResize:null,
         isAnyFixed:false,
         resizeEvent:null,
-        tableAutoWidth:1000,
+        minWidth:1000,
+        cellMinWidth:100,
+        scrollEvent:null,
 
         // 虚拟滚动状态
         visibleData:[],
         offset:0,
         cellHeight:57,
-        bufferNum:0,//缓冲数量
+        headHeight:34,
+        bufferNum:20,//缓冲数量
       }
     },
     provide(){
@@ -71,30 +77,26 @@
       rightColumns(){
         return this.columns.filter(column => column.fixed === 'right')
       },
-      minWidth(){
-        return Math.max(this.columns.length * this.cellMinWidth, this.tableAutoWidth)
-      },
-      cellMinWidth(){
-        // 均分
-        let minWidth = 100
-        let computedWidth = Math.ceil(this.tableAutoWidth / this.columns.length)
-        return Math.max(minWidth,computedWidth)
-      },
       /** 占位框的高度 */
       overHeight(){
-        return this.tableData.length * 58 + 'px'
+        return this.tableData.length * this.cellHeight + this.headHeight + 'px'
       }
     },
     created(){
       this.debounceWindowResize = debounce(this.handleWindowResize,150)
+      this.scrollEvent = debounce(this.handleScroll,16)
     },
     mounted(){
-      this.visibleData = this.tableData.slice(0,10) || []
+      this.wrapper = document.getElementsByClassName('table-wrapper')[0]
+      this.visibleData = this.tableData.slice(0,10 + this.bufferNum) || []
+      this.setSize()
       this.$nextTick(() => {
         this.isAnyFixed = this.leftColumns.length || this.rightColumns.length 
         if(this.isAnyFixed){
           this.handleWindowResize()
           this.resizeEvent = window.addEventListener('resize',this.debounceWindowResize)
+        }else{
+          this.resizeEvent = window.addEventListener('resize',debounce(this.setSize,16))
         }
       })
     },
@@ -105,6 +107,9 @@
           if(!this.resizeEvent){
             this.resizeEvent = window.addEventListener('resize',this.debounceWindowResize)
           }
+        }else{
+          this.setSize()
+          this.resizeEvent = window.addEventListener('resize',debounce(this.setSize,16))
         }
       })
     },
@@ -112,12 +117,19 @@
       /** resize 事件 */
       handleWindowResize(){
         // 获取table宽度
-        const table = document.getElementById('table')
-        const width = table.getBoundingClientRect().width
-        this.tableAutoWidth = width
+        this.setSize()
         // 异步更新
         this.updateHeadSize()
         this.updateRowSize()
+      },
+      setSize(){
+        const table = document.getElementById('table')
+        const width = table.getBoundingClientRect().width
+        this.$nextTick(() => {
+          this.minWidth = Math.max(this.columns.length * this.cellMinWidth, width)
+          this.cellMinWidth = Math.max(this.cellMinWidth, Math.ceil(width / this.columns.length))
+        })
+        
       },
       /**
       * 更新表头
@@ -163,21 +175,35 @@
       },
       /** 滚动事件 */
       handleScroll(){
-        let wrapper = document.getElementsByClassName('table-wrapper')[0]
-        let scrollTop = wrapper.scrollTop
-        let start = this.getStart(scrollTop)
-        start = Math.max(start - this.bufferNum,0)
-        const end = Math.min(start + 10 + this.bufferNum,this.tableData.length)
-        this.offset = scrollTop - (scrollTop % this.cellHeight)
-        this.visibleData = this.tableData.slice(start,end)
+        if(!this.wrapper){
+          this.wrapper = document.getElementsByClassName('table-wrapper')[0]
+        }
+        let scrollTop = this.wrapper.scrollTop
+        if(scrollTop <= this.headHeight){
+          this.offset = 0
+        }else{
+          scrollTop = Math.max(scrollTop - this.headHeight, 0)
+          // 可视区域的
+          let start = Math.floor(scrollTop / this.cellHeight)
+          // 实际渲染的
+          let initialStart = this.getStart(start) // 偏移的量
+          // 10 是可视区域显示的数据
+          const end = Math.min(start + 10 + this.bufferNum,this.tableData.length)
+          this.offset = this.getOffset(scrollTop,start)
+          this.visibleData = this.tableData.slice(initialStart,end)
+        }
       },
-      getStart(scrollTop){
-        return Math.floor(scrollTop/ this.cellHeight)
+      getStart(start){
+        if(start < this.bufferNum) return 0
+        return start - this.bufferNum
       },
-      getOffset(){
-
+      getOffset(scrollTop,start){
+        if(start < this.bufferNum){
+          return 0
+        }else{
+          return scrollTop - (scrollTop % this.cellHeight) - (this.bufferNum * this.cellHeight)
+        }
       }
-
     }
     
   }
