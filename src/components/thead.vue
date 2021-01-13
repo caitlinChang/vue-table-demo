@@ -3,7 +3,7 @@
     <!--- thead -->
     <table border="0" :class="prefixClass + '__table-head'">
       <colgroup>
-        <col v-for="item in columns" :style="{'width':table.cellMinWidth + 'px'}" :key="item.key" class="table-tbody__col">
+        <col v-for="item in columns" :style="{'width':(item.width || table.cellMinWidth) + 'px'}" :key="item.key" class="table-tbody__col">
       </colgroup>
       <tr>
         <th v-for="item in columns" 

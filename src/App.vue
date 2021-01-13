@@ -1,6 +1,11 @@
 <template>
   <div id="app">
     <div>
+      <p>1. 不同高度的数据</p>
+      <p>2. 固定表头</p>
+      <p>3. 样式处理</p>
+    </div>
+    <div>
       <table-component :height="height" :columns="columns" :tableData="tableData" />
     </div>
   </div>

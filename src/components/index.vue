@@ -7,7 +7,7 @@
           <table-component prefixClass='left' :columns="leftColumns" :data="visibleData" />
         </div>
         <div class="table-middle">
-          <div class="table-middle__content" :style="{'min-width':minWidth + 'px'}">
+          <div class="table-middle__content" :style="{'width':innerTableWidth + 'px'}">
             <table-component prefixClass='main' :columns="columns" :data="visibleData" />
           </div>
         </div>
@@ -53,7 +53,7 @@
         debounceWindowResize:null,
         isAnyFixed:false,
         resizeEvent:null,
-        minWidth:1000,
+        innerTableWidth:1000,
         cellMinWidth:100,
         scrollEvent:null,
 
@@ -80,6 +80,16 @@
       /** 占位框的高度 */
       overHeight(){
         return this.tableData.length * this.cellHeight + this.headHeight + 'px'
+      },
+      /** 用户自定义宽度之和 */
+      sumCustomWidth(){
+        return this.columns.reduce((prev,cur) => {
+          return prev + (cur.width || 0)
+        },0)
+      },
+      /** 非用户自定义宽度的列数 数量 */
+      num(){
+        return (this.columns.filter(item => item.width === undefined) || []).length
       }
     },
     created(){
@@ -124,12 +134,18 @@
       },
       setSize(){
         const table = document.getElementById('table')
-        const width = table.getBoundingClientRect().width
-        this.$nextTick(() => {
-          this.minWidth = Math.max(this.columns.length * this.cellMinWidth, width)
-          this.cellMinWidth = Math.max(this.cellMinWidth, Math.ceil(width / this.columns.length))
-        })
-        
+        let width = table.getBoundingClientRect().width
+        let computedWidth = (this.cellMinWidth * this.num) + this.sumCustomWidth
+        if(width > computedWidth){
+          this.innerTableWidth = width 
+          this.$nextTick(() => {
+            this.cellMinWidth = Math.ceil((width - this.sumCustomWidth)/ this.num)
+          })
+        }else{
+          this.$nextTick(() => {
+            this.innerTableWidth = (this.cellMinWidth * this.num) + this.sumCustomWidth
+          })
+        }
       },
       /**
       * 更新表头

@@ -2,7 +2,7 @@
   <div>
     <table :class="prefixClass + '__table-body'" border="0">
       <colgroup>
-        <col v-for="item in columns" :key="item.key" :style="{'width':table.cellMinWidth + 'px'}" class="table-tbody__col">
+        <col v-for="item in columns" :key="item.key" :style="{'width': (item.width || table.cellMinWidth) + 'px'}" class="table-tbody__col">
       </colgroup>
       <tbody>
          <tr v-for="row in data" :key="row.id" :data-row-key="row.id" :class="prefixClass + '__table-row'">
