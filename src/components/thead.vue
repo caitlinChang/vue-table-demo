@@ -33,19 +33,29 @@
       prefixClass:{
         type:String,
         default:''
+      },
+      isFixedHead:{
+        type:Boolean,
+        default:true
       }
     },
     inject:['table'],
-    data(){
-      return {
+    computed:{
+      fixedHeadStyle(){
+        if(this.isFixedHead){
+          return {
+            // top:0,
+            // left:0,
+            // background:'#fff',
+            // 'z-index':3,
+            // 'border-bottom':'1px solid #eee'
+          }
+        }
+        return ''
       }
     },
-    watch:{
-      'table.cellMinWidth':{
-        handler(val){
-          console.log('val =', val)
-        },
-        immediate:true,
+    data(){
+      return {
       }
     },
   }

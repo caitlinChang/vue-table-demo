@@ -1,17 +1,23 @@
 <template>
-  <div id="table" class="table">
-    <div class="table-left">
-      <table-component prefixClass='left' :columns="leftColumns" :data="tableData" />
-    </div>
-    <div class="table-middle">
-      <div class="table-middle__content" :style="{'min-width':minWidth + 'px'}">
-        <table-component prefixClass='main' :columns="columns" :data="tableData" />
+  <div class="table-wrapper" :style="{height:this.height + 'px',overflow:'scroll'}" @scroll="handleScroll">
+    <div class="table-overlay" ref="table-overlay" :style="{height:overHeight}" ></div>
+    <div class="table-content" ref="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
+      <div id="table" class="table">
+        <div class="table-left">
+          <table-component prefixClass='left' :columns="leftColumns" :data="visibleData" />
+        </div>
+        <div class="table-middle">
+          <div class="table-middle__content" :style="{'min-width':minWidth + 'px'}">
+            <table-component prefixClass='main' :columns="columns" :data="visibleData" />
+          </div>
+        </div>
+        <div class="table-right">
+          <table-component prefixClass='right' :columns="rightColumns" :data="visibleData" />
+        </div>
       </div>
     </div>
-    <div class="table-right">
-      <table-component prefixClass='right' :columns="rightColumns" :data="tableData" />
-    </div>
   </div>
+  
 </template>
 
 <script>
@@ -26,6 +32,15 @@
       tableData:{
         type:Array,
         default:() => []
+      },
+      height:{
+        type:[Number,String],
+        default:'auto'
+      },
+      // 是否启用虚拟滚动
+      isVirtualScroll:{
+        type:Boolean,
+        default:false
       }
     },
     components:{
@@ -36,6 +51,12 @@
         isAnyFixed:false,
         resizeEvent:null,
         tableAutoWidth:1000,
+
+        // 虚拟滚动状态
+        visibleData:[],
+        offset:0,
+        cellHeight:57,
+        bufferNum:0,//缓冲数量
       }
     },
     provide(){
@@ -58,12 +79,17 @@
         let minWidth = 100
         let computedWidth = Math.ceil(this.tableAutoWidth / this.columns.length)
         return Math.max(minWidth,computedWidth)
+      },
+      /** 占位框的高度 */
+      overHeight(){
+        return this.tableData.length * 58 + 'px'
       }
     },
     created(){
       this.debounceWindowResize = debounce(this.handleWindowResize,150)
     },
     mounted(){
+      this.visibleData = this.tableData.slice(0,10) || []
       this.$nextTick(() => {
         this.isAnyFixed = this.leftColumns.length || this.rightColumns.length 
         if(this.isAnyFixed){
@@ -83,6 +109,7 @@
       })
     },
     methods:{
+      /** resize 事件 */
       handleWindowResize(){
         // 获取table宽度
         const table = document.getElementById('table')
@@ -127,33 +154,77 @@
           rightTableRows[count].style.height = height + 'px'
           count ++
         })
+      },
+      /**
+      * 虚拟滚动更新列表
+      **/
+      updateScrollList(){
+
+      },
+      /** 滚动事件 */
+      handleScroll(){
+        let wrapper = document.getElementsByClassName('table-wrapper')[0]
+        let scrollTop = wrapper.scrollTop
+        let start = this.getStart(scrollTop)
+        start = Math.max(start - this.bufferNum,0)
+        const end = Math.min(start + 10 + this.bufferNum,this.tableData.length)
+        this.offset = scrollTop - (scrollTop % this.cellHeight)
+        this.visibleData = this.tableData.slice(start,end)
+      },
+      getStart(scrollTop){
+        return Math.floor(scrollTop/ this.cellHeight)
+      },
+      getOffset(){
+
       }
+
     }
     
   }
 </script>
 
-<style scoped>
-.table{
-  display:flex;
+<style>
+.table-wrapper{
+  border:1px solid #eee;
+  overflow-y: scroll;
+  overflow-x:hidden;
   position: relative;
+}
+.table-overlay{
+  width:100%;
+  position: absolute;
+  z-index: -1;
+}
+.table-content{
+  position: absolute;
+  width:100%;
+  left:0;
+  right:0;
+  z-index:2;
+  overflow: hidden;
+}
+.table{
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  z-index:2;
 }
 .table-left{
   position: absolute;
   left:0;
   top:0;
-  z-index: 1;
+  z-index: 3;
   background: #fff;
 }
 .table-right{
   position: absolute;
   right:0;
   top:0;
-  z-index: 1;
+  z-index: 3;
   background: #fff;
 }
 .table-middle{
-  /* width:1000px; */
-  overflow: scroll;
+  width:100%;
+  overflow-x: scroll;
 }
 </style>

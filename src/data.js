@@ -1,5 +1,6 @@
 export const columns = [
   { type:'selection', fixed:'left' },
+  { key:'id', title:'id'},
   { key:'creator', title:'创建人'},
   { key:'createTime', title:'创建时间' },
   { key:'location', title:'地点' },
@@ -22,7 +23,7 @@ const data = { id:0,creator:'lily',createTime:'2020/01/10',location:'深圳市�
 
 // 十万条数据
 let totalData = []
-for(let i=0;i<30;i++){
+for(let i=0;i<100000;i++){
   const obj = {...data}
   obj.id = i
   totalData.push(obj)

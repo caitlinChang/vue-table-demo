@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div>
-      <table-component :columns="columns" :tableData="tableData" />
+      <table-component :height="height" :columns="columns" :tableData="tableData" />
     </div>
   </div>
 </template>
@@ -17,7 +17,8 @@ export default {
   data(){
     return {
       columns,
-      tableData
+      tableData,
+      height:600
     }
   }
 }
@@ -36,7 +37,9 @@ table{
   border-spacing: 0px;
 }
 th,td{
-  border:1px solid #eee;
+  /* border:1px solid #eee; */
+  border-top:1px solid #eee;
+  border-left:1px solid #eee;
   padding:5px 0;
   margin:0;
   font-size:16px;
