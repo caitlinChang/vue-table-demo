@@ -20,4 +20,4 @@ export const debounce = function(fn,delay){
   return debounced
 }
 /** 列表项高度缓存 */
-export const _cache = new WeakMap()
+export const _cache = {}

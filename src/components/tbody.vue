@@ -1,5 +1,4 @@
 <template>
-  <div>
     <table :class="prefixClass + '__table-body'" border="0">
       <colgroup>
         <col v-for="item in columns" :key="item.key" :style="{'width': (item.width || table.cellMinWidth) + 'px'}" class="table-tbody__col">
@@ -17,7 +16,6 @@
         </tr>
       </tbody>
     </table>
-  </div>
 </template>
 
 <script>
@@ -41,7 +39,5 @@
 </script>
 
 <style >
-.table-tbody__col{
-  /* width:100px; */
-}
+
 </style>

@@ -1,27 +1,31 @@
 <template>
-  <div class="table-wrapper" :style="{height:this.height + 'px',overflow:'scroll'}" @scroll="scrollEvent">
-    <div class="table-overlay" ref="table-overlay" :style="{height:overHeight}" ></div>
-    <div class="table-content" ref="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
-      <div id="table" class="table">
-        <div class="table-left">
-          <table-component prefixClass='left' :columns="leftColumns" :data="visibleData" />
+  <div class="table-wrapper" id="table" :style="{height:this.height + 'px',overflow:'hidden'}">
+      <div class="table-content-wrapper" :style="{height:this.height + 'px'}">
+        <div class="table-header-wrapper" :style="{'width':innerTableWidth + 'px'}" >
+          <table-head prefixClass="middle" :columns="columns" />
         </div>
-        <div class="table-middle">
-          <div class="table-middle__content" :style="{'width':innerTableWidth + 'px'}">
-            <table-component prefixClass='main' :columns="columns" :data="visibleData" />
+        <div class="table-body-wrapper" :style="{height:this.height - this.headHeight + 'px','overflow-y':'auto','width':innerTableWidth + 'px'}" @scroll="handleScroll">
+          <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
+          <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
+            <table-body prefixClass="middle" :columns="columns" :data="visibleData" />
           </div>
         </div>
-        <div class="table-right">
-          <table-component prefixClass='right' :columns="rightColumns" :data="visibleData" />
-        </div>
       </div>
-    </div>
+      <div class="table-fixed fixed-left">
+          <table-head prefixClass="left" :columns="leftColumns" />
+          <table-body prefixClass="left" :columns="leftColumns" :data="visibleData" />
+      </div>
+      <div class="table-fixed fixed-right">
+            <table-head prefixClass="right" :columns="rightColumns" />
+            <table-body prefixClass="right" :columns="rightColumns" :data="visibleData" />
+      </div>
   </div>
   
 </template>
 
 <script>
-  import TableComponent from './table-component'
+  import TableHead from './thead'
+  import TableBody from './tbody'
   import { debounce } from './util'
   export default {
     props:{
@@ -44,7 +48,8 @@
       }
     },
     components:{
-      TableComponent
+      TableHead,
+      TableBody
     },
     data(){
       return {
@@ -53,7 +58,7 @@
         debounceWindowResize:null,
         isAnyFixed:false,
         resizeEvent:null,
-        innerTableWidth:1000,
+        innerTableWidth:3000,
         cellMinWidth:100,
         scrollEvent:null,
 
@@ -62,7 +67,8 @@
         offset:0,
         cellHeight:57,
         headHeight:34,
-        bufferNum:20,//缓冲数量
+        visibleCount:16,
+        bufferNum:10,//缓冲数量
       }
     },
     provide(){
@@ -79,7 +85,7 @@
       },
       /** 占位框的高度 */
       overHeight(){
-        return this.tableData.length * this.cellHeight + this.headHeight + 'px'
+        return this.tableData.length * this.cellHeight + 'px'
       },
       /** 用户自定义宽度之和 */
       sumCustomWidth(){
@@ -97,8 +103,8 @@
       this.scrollEvent = debounce(this.handleScroll,16)
     },
     mounted(){
-      this.wrapper = document.getElementsByClassName('table-wrapper')[0]
-      this.visibleData = this.tableData.slice(0,10 + this.bufferNum) || []
+      this.wrapper = document.getElementsByClassName('table-body-wrapper')[0]
+      this.visibleData = this.tableData.slice(0,this.visibleCount + this.bufferNum) || []
       this.setSize()
       this.$nextTick(() => {
         this.isAnyFixed = this.leftColumns.length || this.rightColumns.length 
@@ -151,9 +157,9 @@
       * 更新表头
       **/
       updateHeadSize(){
-        const headClass = 'main-head__table-head'
-        const leftHeadClass = 'left-head__table-head'
-        const rightHeadClass = 'right-head__table-head'
+        const headClass = 'middle__table-head'
+        const leftHeadClass = 'left__table-head'
+        const rightHeadClass = 'right__table-head'
         const tableHead = document.getElementsByClassName(headClass)[0]
         const leftHead = document.getElementsByClassName(leftHeadClass)[0]
         const rightHead = document.getElementsByClassName(rightHeadClass)[0]
@@ -165,13 +171,14 @@
       * 更新表格行
       **/
       updateRowSize(){
-        const rows = document.querySelectorAll('.main-body__table-row')
-        const leftTableRows = document.querySelectorAll('.left-body__table-row')
-        const rightTableRows = document.querySelectorAll('.right-body__table-row')
+        // 1. 这里可以通过startIndex来取缓存，而不需要获取DOM
+        const rows = document.querySelectorAll('.middle__table-row')
+        const leftTableRows = document.querySelectorAll('.left__table-row')
+        const rightTableRows = document.querySelectorAll('.right__table-row')
         const heightObj = new Map()
         Array.prototype.forEach.call(rows,function(row){
-          let height = row.getBoundingClientRect().height
           let dataRowKey = row.dataset.rowKey
+          let height = row.clientHeight
           heightObj.set(dataRowKey,height)
         })
         let count = 0
@@ -186,28 +193,28 @@
       /**
       * 虚拟滚动更新列表
       **/
-      updateScrollList(){
-
+      updateScrollList(top){
+        const leftBody = document.getElementsByClassName('left__table-body')[0]
+        const rightBody = document.getElementsByClassName('right__table-body')[0]
+        leftBody.style.bottom = top + 'px'
+        rightBody.style.bottom = top + 'px'
       },
       /** 滚动事件 */
       handleScroll(){
         if(!this.wrapper){
-          this.wrapper = document.getElementsByClassName('table-wrapper')[0]
+          this.wrapper = document.getElementsByClassName('table-body-wrapper')[0]
         }
         let scrollTop = this.wrapper.scrollTop
-        if(scrollTop <= this.headHeight){
-          this.offset = 0
-        }else{
-          scrollTop = Math.max(scrollTop - this.headHeight, 0)
-          // 可视区域的
-          let start = Math.floor(scrollTop / this.cellHeight)
-          // 实际渲染的
-          let initialStart = this.getStart(start) // 偏移的量
-          // 10 是可视区域显示的数据
-          const end = Math.min(start + 10 + this.bufferNum,this.tableData.length)
-          this.offset = this.getOffset(scrollTop,start)
-          this.visibleData = this.tableData.slice(initialStart,end)
-        }
+        // this.updateScrollList(scrollTop)
+        scrollTop = Math.max(scrollTop, 0)
+        // 可视区域的
+        let start = Math.floor(scrollTop / this.cellHeight)
+        // 实际渲染的
+        let initialStart = this.getStart(start) // 偏移的量
+        // visibleCount 是可视区域显示的数据
+        const end = Math.min(start + this.visibleCount + this.bufferNum,this.tableData.length)
+        this.offset = this.getOffset(scrollTop,start)
+        this.visibleData = this.tableData.slice(initialStart,end)
       },
       getStart(start){
         if(start < this.bufferNum) return 0
@@ -226,47 +233,34 @@
 </script>
 
 <style>
+@import url('./style/virtual-scroll.css');
 .table-wrapper{
   border:1px solid #eee;
-  overflow-y: scroll;
-  overflow-x:hidden;
+  overflow: hidden;
   position: relative;
 }
-.table-overlay{
-  width:100%;
-  position: absolute;
-  z-index: -1;
-}
-.table-content{
-  position: absolute;
-  width:100%;
-  left:0;
-  right:0;
-  z-index:2;
+.table-fixed{
+  position:absolute;
+  top: 0;
+  background-color: #fff;
   overflow: hidden;
 }
-.table{
+.fixed-right{
+  right:0;
+}
+.fixed-left{
+  left:0;
+}
+.table-header-wrapper{
   position: relative;
-  display: flex;
-  overflow: hidden;
-  z-index:2;
 }
-.table-left{
-  position: absolute;
-  left:0;
-  top:0;
-  z-index: 3;
-  background: #fff;
-}
-.table-right{
-  position: absolute;
-  right:0;
-  top:0;
-  z-index: 3;
-  background: #fff;
-}
-.table-middle{
+.table-content-wrapper{
   width:100%;
+  height: 100%;
   overflow-x: scroll;
+  overflow-y: hidden;
+}
+.left__table-body,.right__table-body{
+  position: relative;
 }
 </style>

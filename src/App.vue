@@ -1,13 +1,6 @@
 <template>
   <div id="app">
-    <div>
-      <p>1. 不同高度的数据</p>
-      <p>2. 固定表头</p>
-      <p>3. 样式处理</p>
-    </div>
-    <div>
       <table-component :height="height" :columns="columns" :tableData="tableData" />
-    </div>
   </div>
 </template>
 
@@ -23,20 +16,36 @@ export default {
     return {
       columns,
       tableData,
-      height:600
+      height:800
     }
+  },
+  mounted(){
+    let height = window.innerHeight
+    this.height = height - 160
   }
 }
 </script>
 
 <style>
+*{
+  padding:0;
+  margin:0;
+}
+html,body{
+  width:100%;
+  height:100%;
+  overflow: hidden;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  height: 100%;
+  overflow: hidden;
+  margin:60px;
+  /* margin-top: 60px; */
 }
 table{
   border-spacing: 0px;
