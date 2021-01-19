@@ -21,7 +21,7 @@ export default {
   },
   mounted(){
     let height = window.innerHeight
-    this.height = height - 160
+    this.height = Math.min(500,height - 160)
   }
 }
 </script>
