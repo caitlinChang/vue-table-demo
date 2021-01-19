@@ -1,30 +1,30 @@
 <template>
   <div class="table-wrapper" id="table" :style="{height:this.height + 'px',overflow:'hidden'}">
-      <div class="table-content-wrapper" :style="{height:this.height + 'px'}">
+      <div class="table-content-wrapper" ref="table-content-wrapper" :style="{height:this.height + 'px'}">
         <div class="table-header-wrapper" :style="{'width':innerTableWidth + 'px'}" >
           <table-head prefixClass="middle" :columns="columns" />
         </div>
         <div class="table-body-wrapper" ref="table-body-wrapper" tabindex="-1" :style="{height:this.height - this.headHeight + 'px','overflow-y':'auto','width':innerTableWidth + 'px'}" @scroll="scrollEvent">
           <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-          <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
+          <div class="table-content" ref="content">
             <table-body prefixClass="middle" :columns="columns" :data="visibleData" />
           </div>
         </div>
       </div>
       <div class="table-fixed fixed-left">
           <table-head prefixClass="left" :columns="leftColumns" />
-          <div class="table-body-wrapper__left" ref="table-body-wrapper__left" :style="{height:this.height - this.headHeight + 'px','overflow-y':'auto'}">
+          <div class="table-body-wrapper__left" ref="table-body-wrapper__left" :style="{height:this.height - this.headHeight + 'px','overflow-y':'hidden'}">
               <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-              <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
+              <div class="table-content">
                 <table-body prefixClass="left" :columns="leftColumns" :data="visibleData" />
               </div>
           </div>
       </div>
       <div class="table-fixed fixed-right">
             <table-head prefixClass="right" :columns="rightColumns" />
-            <div class="table-body-wrapper__right" ref="table-body-wrapper__right" :style="{height:this.height - this.headHeight + 'px','overflow-y':'auto'}">
+            <div class="table-body-wrapper__right" ref="table-body-wrapper__right" :style="{height:this.height - this.headHeight + 'px','overflow-y':'hidden'}">
               <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-              <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
+              <div class="table-content">
                 <table-body prefixClass="right" :columns="rightColumns" :data="visibleData" />
               </div>
             </div>
@@ -69,6 +69,7 @@
         innerTableWidth:3000,
         cellMinWidth:100,
         scrollEvent:null,
+        scrollBarWidth:0,
 
         // 虚拟滚动状态
         visibleData:[],
@@ -109,6 +110,7 @@
     created(){
       this.debounceWindowResize = debounce(this.handleWindowResize,16)
       this.scrollEvent = debounce(this.handleScroll,16)
+
     },
     mounted(){
       this.visibleData = this.tableData.slice(0,this.visibleCount + this.bufferNum) || []
@@ -122,6 +124,12 @@
           this.resizeEvent = window.addEventListener('resize',debounce(this.setSize,16))
         }
       })
+
+      // this.scrollBarWidth = this.getScrollBarWidth()
+      // if(this.scrollBarWidth !== 0){
+      //   const dom = document.getElementsByClassName('fixed-right')[0]
+      //   dom.style.right = this.scrollBarWidth + 'px'
+      // }
     },
     updated(){
       this.$nextTick(() => {
@@ -137,6 +145,19 @@
       })
     },
     methods:{
+      getScrollBarWidth(){
+        const oP = document.createElement('p');
+        let styles = {
+            width: '100px',
+            height: '100px',
+            overflowY: 'scroll'
+        }, i, scrollbarWidth;
+        for (i in styles) oP.style[i] = styles[i];
+        document.body.appendChild(oP);
+        scrollbarWidth = oP.offsetWidth - oP.clientWidth;
+        oP.remove();
+        return scrollbarWidth;
+      },
       /** resize 事件 */
       handleWindowResize(){
         // 获取table宽度
@@ -199,21 +220,28 @@
       },
       /** 滚动事件 */
       handleScroll(){
-        const scrollTop = this.$refs['table-body-wrapper'].scrollTop
-        window.requestAnimationFrame(() => {
-          this.$refs['table-body-wrapper__right'].scrollTop = scrollTop
-          this.$refs['table-body-wrapper__left'].scrollTop = scrollTop
-        })
-        setTimeout(() => {
+          const scrollTop = this.$refs['table-body-wrapper'].scrollTop
            // 可视区域的
           let start = Math.floor(scrollTop / this.cellHeight)
           // 实际渲染的
           let initialStart = this.getStart(start) // 偏移的量
           // visibleCount 是可视区域显示的数据
           const end = Math.min(start + this.visibleCount + this.bufferNum,this.tableData.length)
-          this.offset = this.getOffset(scrollTop,start)
+          const offset = this.getOffset(scrollTop,start)
           this.visibleData = this.tableData.slice(initialStart,end)
-        },0)
+
+          window.requestAnimationFrame(() => {
+            this.$refs['table-body-wrapper__right'].scrollTop = scrollTop
+            this.$refs['table-body-wrapper__left'].scrollTop = scrollTop
+            if(offset !== this.offset){
+              const content = document.getElementsByClassName('.table-content')
+              Array.prototype.forEach.call(content,function(dom){
+                dom.style.transform = `translate3d(0,${offset}px,0)`
+              })
+              this.offset = offset
+            }
+            
+          })
       },
       getStart(start){
         if(start < this.bufferNum) return 0
@@ -262,7 +290,7 @@
 .left__table-body,.right__table-body{
   position: relative;
 }
-.table-body-wrapper__left,.table-body-wrapper__right{
+.table-body-wrapper__left,.table-body-wrapper__right,.table-body-wrapper{
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -271,5 +299,8 @@
 }
 .table-body-wrapper__right::-webkit-scrollbar {
   display: none; /* Chrome Safari */
+}
+.table-body-wrapper::-webkit-scrollbar {
+  display: none;
 }
 </style>

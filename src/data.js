@@ -13,9 +13,9 @@ export const columns = [
   { key:'title3', title:'title3' },
   { key:'title4', title:'title4' },
   { key:'title5', title:'title5' },
-  // { key:'title6', title:'title6' },
-  // { key:'title7', title:'title7' },
-  // { key:'title8', title:'title8' },
+  { key:'title6', title:'title6' },
+  { key:'title7', title:'title7' },
+  { key:'title8', title:'title8' },
   { key:'rightFixed', title:'操作',fixed:'right'}
 ]
 
