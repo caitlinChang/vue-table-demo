@@ -252,6 +252,9 @@
   overflow: hidden;
   position: relative;
 }
+.middle__table-head,.left__table-head,.right__table-head{
+  border-bottom:1px solid #eee;
+}
 .table-fixed{
   position:absolute;
   top: 0;
@@ -261,9 +264,11 @@
 }
 .fixed-right{
   right:0;
+  border-left:1px solid #eee;
 }
 .fixed-left{
   left:0;
+  border-right:1px solid #eee;
 }
 .table-header-wrapper{
   position: relative;
