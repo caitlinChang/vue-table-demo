@@ -5,8 +5,8 @@
           <table-head prefixClass="middle" :columns="columns" />
         </div>
         <div class="table-body-wrapper" ref="table-body-wrapper" tabindex="-1" :style="{height:this.height - this.headHeight + 'px','overflow-y':'auto','width':innerTableWidth + 'px'}" @scroll="scrollEvent">
-          <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-          <div class="table-content" ref="content">
+          <div class="table-overlay" :style="{height:5700000 + 'px'}"></div>
+          <div class="table-content" ref="content" :style="{transform:`translate3d(0,${offset}px,0)`}">
             <table-body prefixClass="middle" :columns="columns" :data="visibleData" />
           </div>
         </div>
@@ -15,7 +15,7 @@
           <table-head prefixClass="left" :columns="leftColumns" />
           <div class="table-body-wrapper__left" ref="table-body-wrapper__left" :style="{height:this.height - this.headHeight + 'px','overflow-y':'hidden'}">
               <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-              <div class="table-content">
+              <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
                 <table-body prefixClass="left" :columns="leftColumns" :data="visibleData" />
               </div>
           </div>
@@ -24,7 +24,7 @@
             <table-head prefixClass="right" :columns="rightColumns" />
             <div class="table-body-wrapper__right" ref="table-body-wrapper__right" :style="{height:this.height - this.headHeight + 'px','overflow-y':'hidden'}">
               <div class="table-overlay" :style="{height:overHeight + 'px'}"></div>
-              <div class="table-content">
+              <div class="table-content" :style="{transform:`translate3d(0,${offset}px,0)`}">
                 <table-body prefixClass="right" :columns="rightColumns" :data="visibleData" />
               </div>
             </div>
@@ -76,7 +76,7 @@
         offset:0,
         cellHeight:57,
         headHeight:34,
-        visibleCount:20,
+        visibleCount:10,
         bufferNum:10,//缓冲数量
       }
     },
@@ -124,12 +124,6 @@
           this.resizeEvent = window.addEventListener('resize',debounce(this.setSize,16))
         }
       })
-
-      // this.scrollBarWidth = this.getScrollBarWidth()
-      // if(this.scrollBarWidth !== 0){
-      //   const dom = document.getElementsByClassName('fixed-right')[0]
-      //   dom.style.right = this.scrollBarWidth + 'px'
-      // }
     },
     updated(){
       this.$nextTick(() => {
@@ -227,20 +221,12 @@
           let initialStart = this.getStart(start) // 偏移的量
           // visibleCount 是可视区域显示的数据
           const end = Math.min(start + this.visibleCount + this.bufferNum,this.tableData.length)
-          const offset = this.getOffset(scrollTop,start)
+          this.offset = this.getOffset(scrollTop,start)
           this.visibleData = this.tableData.slice(initialStart,end)
 
           window.requestAnimationFrame(() => {
             this.$refs['table-body-wrapper__right'].scrollTop = scrollTop
             this.$refs['table-body-wrapper__left'].scrollTop = scrollTop
-            if(offset !== this.offset){
-              const content = document.getElementsByClassName('.table-content')
-              Array.prototype.forEach.call(content,function(dom){
-                dom.style.transform = `translate3d(0,${offset}px,0)`
-              })
-              this.offset = offset
-            }
-            
           })
       },
       getStart(start){
@@ -271,6 +257,7 @@
   top: 0;
   background-color: #fff;
   overflow: hidden;
+  z-index: 4;
 }
 .fixed-right{
   right:0;
@@ -291,6 +278,7 @@
   position: relative;
 }
 .table-body-wrapper__left,.table-body-wrapper__right,.table-body-wrapper{
+  position: relative;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -302,5 +290,17 @@
 }
 .table-body-wrapper::-webkit-scrollbar {
   display: none;
+}
+/* start */
+.table-body-wrapper .table-overlay{
+  width:100%;
+  z-index: -1;
+}
+.table-body-wrapper .table-content{
+  position: absolute;
+  width:100%;
+  left: 0;
+  top:0;
+  z-index: 2;
 }
 </style>
